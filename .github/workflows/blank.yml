@@ -19,9 +19,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Download File
+      - name: Install aria2
+        run: sudo apt-get install -y aria2
+
+      - name: Extract Filename from URL
+        id: extract_filename
         run: |
-          curl -L ${{ github.event.inputs.download_url }} -o downloaded_file
+          filename=$(basename "${{ github.event.inputs.download_url }}")
+          echo "filename=$filename" >> $GITHUB_ENV
+
+      - name: Download File with aria2
+        run: |
+          aria2c -x 16 -s 16 "${{ github.event.inputs.download_url }}" -o "${filename}"
 
       - name: Create Release
         id: create_release
@@ -38,6 +47,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./downloaded_file
-          asset_name: downloaded_file
+          asset_path: ./${{ env.filename }}
+          asset_name: ${{ env.filename }}
           asset_content_type: application/octet-stream
